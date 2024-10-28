@@ -31,8 +31,7 @@ class CapabilityProfile {
     return CapabilityProfile._internal(name, list);
   }
 
-  factory CapabilityProfile.fromMap(Map<String, dynamic> map) {
-    final name = map['name'] as String;
+  factory CapabilityProfile.fromMap(Map<String, dynamic> map, String name) {
     final codePagesMap = map['codePages'] as Map<String, dynamic>;
     final codePages = codePagesMap.entries.map((entry) {
       return CodePage(int.parse(entry.key), entry.value as String);
