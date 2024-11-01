@@ -1,6 +1,7 @@
 import 'dart:convert';
 import 'dart:typed_data' show Uint8List;
 
+import 'package:charset_converter/charset_converter.dart';
 import 'package:flutter_esc_pos_utils/flutter_esc_pos_utils.dart';
 import 'package:gbk_codec/gbk_codec.dart';
 import 'package:hex/hex.dart';
@@ -10,7 +11,10 @@ import 'commands.dart';
 
 class Generator {
   Generator(this._paperSize, this._profile,
-      {this.spaceBetweenRows = 5, this.codec = latin1});
+      {this.spaceBetweenRows = 5,
+      this.codec = latin1,
+      this.useCharsetConvertor = true,
+      this.charset = "CP1252"});
 
   // Ticket config
   final PaperSize _paperSize;
@@ -23,6 +27,8 @@ class Generator {
   PosStyles _styles = const PosStyles();
   final Codec codec;
   int spaceBetweenRows;
+  final bool useCharsetConvertor;
+  final String charset;
 
   // ************************ Internal helpers ************************
   int _getMaxCharsPerLine(PosFontType? font) {
@@ -62,7 +68,8 @@ class Generator {
     return charsPerLine;
   }
 
-  Uint8List _encode(String text, {bool isKanji = false}) {
+  Future<Uint8List> _encode(String text,
+      {bool isKanji = false, required String charset}) async {
     // replace some non-ascii characters
     text = text
         .replaceAll("’", "'")
@@ -70,10 +77,15 @@ class Generator {
         .replaceAll("»", '"')
         .replaceAll(" ", ' ')
         .replaceAll("•", '.');
-    if (!isKanji) {
-      return codec.encode(text);
+
+    if (useCharsetConvertor) {
+      return await CharsetConverter.encode(charset, text);
     } else {
-      return Uint8List.fromList(gbk_bytes.encode(text));
+      if (!isKanji) {
+        return codec.encode(text);
+      } else {
+        return Uint8List.fromList(gbk_bytes.encode(text));
+      }
     }
   }
 
@@ -190,7 +202,6 @@ class Generator {
       oneChannelBytes = List<int>.filled(heightPx * targetWidth, 0);
 
       for (int i = 0; i < heightPx; i++) {
-
         final pos =
             (i * widthPx) + i * missingPx; // Corrected position calculation
         oneChannelBytes.insertAll(pos, extra);
@@ -251,9 +262,10 @@ class Generator {
   }
 
   /// Clear the buffer and reset text styles
-  List<int> clearStyle() {
+  Future<List<int>> clearStyle({String? charset}) async {
     return setStyles(
-        const PosStyles(height: PosTextSize.size1, width: PosTextSize.size1));
+      const PosStyles(height: PosTextSize.size1, width: PosTextSize.size1),
+    );
   }
 
   /// Set global code table which will be used instead of the default printer's code table
@@ -283,12 +295,23 @@ class Generator {
     return bytes;
   }
 
-  List<int> setStyles(PosStyles styles, {bool isKanji = false}) {
+  Future<List<int>> setStyles(PosStyles styles, {bool isKanji = false}) async {
     List<int> bytes = [];
     if (styles.align != _styles.align) {
-      bytes += codec.encode(styles.align == PosAlign.left
-          ? cAlignLeft
-          : (styles.align == PosAlign.center ? cAlignCenter : cAlignRight));
+      if (useCharsetConvertor) {
+        bytes += await CharsetConverter.encode(
+            charset,
+            styles.align == PosAlign.left
+                ? cAlignLeft
+                : (styles.align == PosAlign.center
+                    ? cAlignCenter
+                    : cAlignRight));
+      } else {
+        bytes += codec.encode(styles.align == PosAlign.left
+            ? cAlignLeft
+            : (styles.align == PosAlign.center ? cAlignCenter : cAlignRight));
+      }
+
       _styles = _styles.copyWith(align: styles.align);
     }
 
@@ -367,17 +390,17 @@ class Generator {
     return bytes;
   }
 
-  List<int> text(
-    String text, {
-    PosStyles styles = const PosStyles(),
-    int linesAfter = 0,
-    bool containsChinese = false,
-    int? maxCharsPerLine,
-  }) {
+  Future<List<int>> text(String text,
+      {PosStyles styles = const PosStyles(),
+      int linesAfter = 0,
+      bool containsChinese = false,
+      int? maxCharsPerLine,
+      String? charset}) async {
     List<int> bytes = [];
     if (!containsChinese) {
-      bytes += _text(
-        _encode(text, isKanji: containsChinese),
+      bytes += await _text(
+        await _encode(text,
+            isKanji: containsChinese, charset: charset ?? this.charset),
         styles: styles,
         isKanji: containsChinese,
         maxCharsPerLine: maxCharsPerLine,
@@ -385,7 +408,8 @@ class Generator {
       // Ensure at least one line break after the text
       bytes += emptyLines(linesAfter + 1);
     } else {
-      bytes += _mixedKanji(text, styles: styles, linesAfter: linesAfter);
+      bytes += await _mixedKanji(text,
+          styles: styles, linesAfter: linesAfter, charset: charset);
     }
     return bytes;
   }
@@ -485,7 +509,8 @@ class Generator {
   ///
   /// A row contains up to 12 columns. A column has a width between 1 and 12.
   /// Total width of columns in one row must be equal 12.
-  List<int> row(List<PosColumn> cols, {bool multiLine = true}) {
+  Future<List<int>> row(List<PosColumn> cols,
+      {bool multiLine = true, String? charset}) async {
     List<int> bytes = [];
     final isSumValid = cols.fold(0, (int sum, col) => sum + col.width) == 12;
     if (!isSumValid) {
@@ -507,7 +532,7 @@ class Generator {
         // CASE 1: containsChinese = false
         Uint8List encodedToPrint = cols[i].textEncoded != null
             ? cols[i].textEncoded!
-            : _encode(cols[i].text);
+            : await _encode(cols[i].text, charset: charset ?? this.charset);
 
         // If the col's content is too long, split it to the next row
         if (multiLine) {
@@ -529,7 +554,7 @@ class Generator {
           }
         }
         // end rows splitting
-        bytes += _text(
+        bytes += await _text(
           encodedToPrint,
           styles: cols[i].styles,
           colInd: colInd,
@@ -572,8 +597,9 @@ class Generator {
         // Print each lexeme using codetable OR kanji
         int? colIndex = colInd;
         for (var j = 0; j < lexemes.length; ++j) {
-          bytes += _text(
-            _encode(lexemes[j], isKanji: isLexemeChinese[j]),
+          bytes += await _text(
+            await _encode(lexemes[j],
+                isKanji: isLexemeChinese[j], charset: charset ?? this.charset),
             styles: cols[i].styles,
             colInd: colIndex,
             colWidth: cols[i].width,
@@ -588,7 +614,7 @@ class Generator {
     bytes += emptyLines(1);
 
     if (isNextRow) {
-      bytes += row(nextRow);
+      bytes += await row(nextRow);
     }
     return bytes;
   }
@@ -596,11 +622,13 @@ class Generator {
   /// Print an image using (ESC *) command
   ///
   /// [image] is an instance of class from [Image library](https://pub.dev/packages/image)
-  List<int> image(Image imgSrc,
-      {PosAlign align = PosAlign.center, bool isDoubleDensity = true}) {
+  Future<List<int>> image(Image imgSrc,
+      {PosAlign align = PosAlign.center, bool isDoubleDensity = true}) async {
     List<int> bytes = [];
     // Image alignment
-    bytes += setStyles(const PosStyles().copyWith(align: align));
+    bytes += await setStyles(
+      const PosStyles().copyWith(align: align),
+    );
 
     Image image;
     if (!isDoubleDensity) {
@@ -658,16 +686,16 @@ class Generator {
   /// Print an image using (GS v 0) obsolete command
   ///
   /// [image] is an instanse of class from [Image library](https://pub.dev/packages/image)
-  List<int> imageRaster(
+  Future<List<int>> imageRaster(
     Image image, {
     PosAlign align = PosAlign.center,
     bool highDensityHorizontal = true,
     bool highDensityVertical = true,
     PosImageFn imageFn = PosImageFn.bitImageRaster,
-  }) {
+  }) async {
     List<int> bytes = [];
     // Image alignment
-    bytes += setStyles(const PosStyles().copyWith(align: align));
+    bytes += await setStyles(const PosStyles().copyWith(align: align));
 
     final int widthPx = image.width;
     final int heightPx = image.height;
@@ -709,17 +737,17 @@ class Generator {
   /// [width] range and units are different depending on the printer model (some printers use 1..5).
   /// [height] range: 1 - 255. The units depend on the printer model.
   /// Width, height, font, text position settings are effective until performing of ESC @, reset or power-off.
-  List<int> barcode(
+  Future<List<int>> barcode(
     Barcode barcode, {
     int? width,
     int? height,
     BarcodeFont? font,
     BarcodeText textPos = BarcodeText.below,
     PosAlign align = PosAlign.center,
-  }) {
+  }) async {
     List<int> bytes = [];
     // Set alignment
-    bytes += setStyles(const PosStyles().copyWith(align: align));
+    bytes += await setStyles(const PosStyles().copyWith(align: align));
 
     // Set text position
     bytes += cBarcodeSelectPos.codeUnits + [textPos.value];
@@ -751,15 +779,15 @@ class Generator {
   }
 
   /// Print a QR Code
-  List<int> qrcode(
+  Future<List<int>> qrcode(
     String text, {
     PosAlign align = PosAlign.center,
     QRSize size = QRSize.size4,
     QRCorrection cor = QRCorrection.L,
-  }) {
+  }) async {
     List<int> bytes = [];
     // Set alignment
-    bytes += setStyles(const PosStyles().copyWith(align: align));
+    bytes += await setStyles(const PosStyles().copyWith(align: align));
     QRCode qr = QRCode(text, size, cor);
     bytes += qr.bytes;
     return bytes;
@@ -789,22 +817,23 @@ class Generator {
 
   /// Print horizontal full width separator
   /// If [len] is null, then it will be defined according to the paper width
-  List<int> hr({String ch = '-', int? len, int linesAfter = 0}) {
+  Future<List<int>> hr({String ch = '-', int? len, int linesAfter = 0}) async {
     List<int> bytes = [];
     int n = len ?? _maxCharsPerLine ?? _getMaxCharsPerLine(_styles.fontType);
     String ch1 = ch.length == 1 ? ch : ch[0];
-    bytes += text(List.filled(n, ch1).join(), linesAfter: linesAfter);
+    bytes += await text(List.filled(n, ch1).join(), linesAfter: linesAfter);
     return bytes;
   }
 
-  List<int> textEncoded(
+  Future<List<int>> textEncoded(
     Uint8List textBytes, {
     PosStyles styles = const PosStyles(),
     int linesAfter = 0,
     int? maxCharsPerLine,
-  }) {
+  }) async {
     List<int> bytes = [];
-    bytes += _text(textBytes, styles: styles, maxCharsPerLine: maxCharsPerLine);
+    bytes += await _text(textBytes,
+        styles: styles, maxCharsPerLine: maxCharsPerLine);
     // Ensure at least one line break after the text
     bytes += emptyLines(linesAfter + 1);
     return bytes;
@@ -815,14 +844,14 @@ class Generator {
   /// Generic print for internal use
   ///
   /// [colInd] range: 0..11. If null: do not define the position
-  List<int> _text(
+  Future<List<int>> _text(
     Uint8List textBytes, {
     PosStyles styles = const PosStyles(),
     int? colInd = 0,
     bool isKanji = false,
     int colWidth = 12,
     int? maxCharsPerLine,
-  }) {
+  }) async {
     List<int> bytes = [];
     if (colInd != null) {
       double charWidth =
@@ -855,19 +884,20 @@ class Generator {
       );
     }
 
-    bytes += setStyles(styles, isKanji: isKanji);
+    bytes += await setStyles(styles, isKanji: isKanji);
 
     bytes += textBytes;
     return bytes;
   }
 
   /// Prints one line of styled mixed (chinese and latin symbols) text
-  List<int> _mixedKanji(
+  Future<List<int>> _mixedKanji(
     String text, {
     PosStyles styles = const PosStyles(),
     int linesAfter = 0,
     int? maxCharsPerLine,
-  }) {
+    required String? charset,
+  }) async {
     List<int> bytes = [];
     final list = _getLexemes(text);
     final List<String> lexemes = list[0];
@@ -876,8 +906,9 @@ class Generator {
     // Print each lexeme using codetable OR kanji
     int? colInd = 0;
     for (var i = 0; i < lexemes.length; ++i) {
-      bytes += _text(
-        _encode(lexemes[i], isKanji: isLexemeChinese[i]),
+      bytes += await _text(
+        await _encode(lexemes[i],
+            isKanji: isLexemeChinese[i], charset: charset ?? this.charset),
         styles: styles,
         colInd: colInd,
         isKanji: isLexemeChinese[i],
