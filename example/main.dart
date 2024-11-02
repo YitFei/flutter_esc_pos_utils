@@ -7,7 +7,13 @@ Future<List<int>> main() async {
   final generator = Generator(PaperSize.mm80, profile, charset: "CP936");
   List<int> bytes = [];
   // bytes += generator.reset();
-  var cbytes = await generator.text("测试", containsChinese: true);
+  // var cbytes =
+  //     await generator.text("一一一一一一一一一一一一一一一一一一", containsChinese: true);
+
+  var cbytes = await generator.row([
+    PosColumn(text: "一一一一一一一一一一一一一一一一一一", width: 5),
+    PosColumn(text: "", width: 7),
+  ]);
   return bytes;
   bytes += await generator.text(
       'Regular: aA bB cC dD eE fF gG hH iI jJ kK lL mM nN oO pP qQ rR sS tT uU vV wW xX yY zZ');
