@@ -1,10 +1,14 @@
+import 'package:flutter/material.dart';
 import 'package:flutter_esc_pos_utils/flutter_esc_pos_utils.dart';
 
 Future<List<int>> main() async {
+  WidgetsFlutterBinding.ensureInitialized();
   final profile = await CapabilityProfile.load();
-  final generator = Generator(PaperSize.mm80, profile);
+  final generator = Generator(PaperSize.mm80, profile, charset: "CP936");
   List<int> bytes = [];
-
+  // bytes += generator.reset();
+  var cbytes = await generator.text("测试", containsChinese: true);
+  return bytes;
   bytes += await generator.text(
       'Regular: aA bB cC dD eE fF gG hH iI jJ kK lL mM nN oO pP qQ rR sS tT uU vV wW xX yY zZ');
   bytes += await generator.text('Special 1: àÀ èÈ éÉ ûÛ üÜ çÇ ôÔ',

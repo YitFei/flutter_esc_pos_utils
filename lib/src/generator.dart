@@ -10,11 +10,15 @@ import 'package:image/image.dart';
 import 'commands.dart';
 
 class Generator {
-  Generator(this._paperSize, this._profile,
-      {this.spaceBetweenRows = 5,
-      this.codec = latin1,
-      this.useCharsetConvertor = true,
-      this.charset = "CP1252"});
+  Generator(
+    this._paperSize,
+    this._profile, {
+    this.spaceBetweenRows = 5,
+    this.codec = latin1,
+    this.useCharsetConvertor = true,
+    this.charset = "CP1252",
+    this.isKanji,
+  });
 
   // Ticket config
   final PaperSize _paperSize;
@@ -29,6 +33,7 @@ class Generator {
   int spaceBetweenRows;
   final bool useCharsetConvertor;
   final String charset;
+  final bool? isKanji;
 
   // ************************ Internal helpers ************************
   int _getMaxCharsPerLine(PosFontType? font) {
@@ -355,7 +360,7 @@ class Generator {
     }
 
     // Set Kanji mode
-    if (isKanji) {
+    if (this.isKanji ?? isKanji) {
       bytes += cKanjiOn.codeUnits;
     } else {
       bytes += cKanjiOff.codeUnits;
@@ -383,7 +388,8 @@ class Generator {
   /// Send raw command(s)
   List<int> rawBytes(List<int> cmd, {bool isKanji = false}) {
     List<int> bytes = [];
-    if (!isKanji) {
+    var kanji = this.isKanji ?? isKanji;
+    if (!kanji) {
       bytes += cKanjiOff.codeUnits;
     }
     bytes += Uint8List.fromList(cmd);
@@ -398,11 +404,13 @@ class Generator {
       String? charset}) async {
     List<int> bytes = [];
     if (!containsChinese) {
+      var data = await _encode(text,
+          isKanji: isKanji ?? containsChinese,
+          charset: charset ?? this.charset);
       bytes += await _text(
-        await _encode(text,
-            isKanji: containsChinese, charset: charset ?? this.charset),
+        data,
         styles: styles,
-        isKanji: containsChinese,
+        isKanji: isKanji ?? containsChinese,
         maxCharsPerLine: maxCharsPerLine,
       );
       // Ensure at least one line break after the text
