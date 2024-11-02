@@ -360,11 +360,11 @@ class Generator {
     }
 
     // Set Kanji mode
-    if (this.isKanji ?? isKanji) {
-      bytes += cKanjiOn.codeUnits;
-    } else {
-      bytes += cKanjiOff.codeUnits;
-    }
+    // if (this.isKanji ?? isKanji) {
+    //   bytes += cKanjiOn.codeUnits;
+    // } else {
+    //   bytes += cKanjiOff.codeUnits;
+    // }
 
     // Set local code table
     if (styles.codeTable != null) {
