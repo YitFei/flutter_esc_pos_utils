@@ -31,8 +31,8 @@ class PaperSize {
   const PaperSize._internal(this.value, this.name);
   final int value;
   final String name;
-  static const mm58 = PaperSize._internal(1, "58mm");
-  static const mm72 = PaperSize._internal(3, "72mm");
+  static const mm58 = PaperSize._internal(0, "58mm");
+  static const mm72 = PaperSize._internal(1, "72mm");
   static const mm80 = PaperSize._internal(2, "80mm");
 
   //TODO
