@@ -28,14 +28,19 @@ class PosTextSize {
 }
 
 class PaperSize {
-  const PaperSize._internal(this.value);
+  const PaperSize._internal(this.value, this.name);
   final int value;
-  static const mm58 = PaperSize._internal(1);
-  static const mm80 = PaperSize._internal(2);
-  static const mm72 = PaperSize._internal(3);
+  final String name;
+  static const mm58 = PaperSize._internal(1, "58mm");
+  static const mm72 = PaperSize._internal(3, "72mm");
+  static const mm80 = PaperSize._internal(2, "80mm");
 
   //TODO
-  static List<PaperSize> get values => [mm58, mm80, mm72];
+  static List<PaperSize> get values => [
+        mm58,
+        mm72,
+        mm80,
+      ];
 
   int get width => value == PaperSize.mm58.value
       ? 372
