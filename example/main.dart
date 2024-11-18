@@ -1,3 +1,5 @@
+// ignore_for_file: dead_code
+
 import 'package:flutter/material.dart';
 import 'package:flutter_esc_pos_utils/flutter_esc_pos_utils.dart';
 
@@ -10,6 +12,7 @@ Future<List<int>> main() async {
   // var cbytes =
   //     await generator.text("一一一一一一一一一一一一一一一一一一", containsChinese: true);
 
+  // ignore: unused_local_variable
   var cbytes = await generator.row([
     PosColumn(text: "一一一一一一一一一一一一一一一一一一", width: 5),
     PosColumn(text: "", width: 7),
