@@ -1,5 +1,6 @@
 library flutter_esc_pos_utils;
 
+export 'src/color_print.dart';
 export 'src/barcode.dart';
 export 'src/capability_profile.dart';
 export 'src/enums.dart';

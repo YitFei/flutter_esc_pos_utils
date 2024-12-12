@@ -3,6 +3,7 @@ import 'dart:typed_data' show Uint8List;
 
 import 'package:charset_converter/charset_converter.dart';
 import 'package:flutter_esc_pos_utils/flutter_esc_pos_utils.dart';
+import 'package:flutter_esc_pos_utils/src/color_print.dart';
 import 'package:gbk_codec/gbk_codec.dart';
 import 'package:hex/hex.dart';
 import 'package:image/image.dart';
@@ -300,17 +301,19 @@ class Generator {
     return bytes;
   }
 
-  Future<List<int>> setStyles(PosStyles styles, {bool isKanji = false}) async {
+  Future<List<int>> setStyles(PosStyles styles,
+      {bool isKanji = false, bool isRow = false}) async {
     List<int> bytes = [];
-    if (styles.align != _styles.align) {
+
+    //* Check if the desired alignment is different from the current alignment
+    //* and ensure that the styling is not being applied to an entire row.
+    if (styles.align != _styles.align && isRow == false) {
       if (useCharsetConvertor) {
-        bytes += await CharsetConverter.encode(
-            charset,
-            styles.align == PosAlign.left
-                ? cAlignLeft
-                : (styles.align == PosAlign.center
-                    ? cAlignCenter
-                    : cAlignRight));
+        bytes += (styles.align == PosAlign.left
+            ? cAlignLeft.codeUnits
+            : (styles.align == PosAlign.center
+                ? cAlignCenter.codeUnits
+                : cAlignRight.codeUnits));
       } else {
         bytes += codec.encode(styles.align == PosAlign.left
             ? cAlignLeft
@@ -513,10 +516,13 @@ class Generator {
     return bytes;
   }
 
+  int currentLine = 0;
+
   /// Print a row.
   ///
   /// A row contains up to 12 columns. A column has a width between 1 and 12.
   /// Total width of columns in one row must be equal 12.
+
   Future<List<int>> row(List<PosColumn> cols,
       {bool multiLine = true, String? charset}) async {
     List<int> bytes = [];
@@ -564,12 +570,11 @@ class Generator {
           }
         }
         // end rows splitting
-        bytes += await _text(
-          encodedToPrint,
-          styles: cols[i].styles,
-          colInd: colInd,
-          colWidth: cols[i].width,
-        );
+        bytes += await _text(encodedToPrint,
+            styles: cols[i].styles,
+            colInd: colInd,
+            colWidth: cols[i].width,
+            isRow: true);
       } else {
         // CASE 1: containsChinese = true
         // Split text into multiple lines if it too long
@@ -607,21 +612,27 @@ class Generator {
         // Print each lexeme using codetable OR kanji
         int? colIndex = colInd;
         for (var j = 0; j < lexemes.length; ++j) {
-          bytes += await _text(
-            await _encode(lexemes[j],
-                isKanji: isLexemeChinese[j], charset: charset ?? this.charset),
-            styles: cols[i].styles,
-            colInd: colIndex,
-            colWidth: cols[i].width,
-            isKanji: isLexemeChinese[j],
-          );
+          var text = await _text(
+              await _encode(lexemes[j],
+                  isKanji: isLexemeChinese[j],
+                  charset: charset ?? this.charset),
+              styles: cols[i].styles,
+              colInd: colIndex,
+              colWidth: cols[i].width,
+              isKanji: isLexemeChinese[j],
+              isRow: true);
+          warningPrint("Line [$currentLine] - Col [$i]: $text");
+          bytes += text;
           // Define the absolute position only once (we print one line only)
           colIndex = null;
         }
       }
     }
 
+    currentLine++;
+
     bytes += emptyLines(1);
+    warningPrint("BreakLine: ${emptyLines(1)}");
 
     if (isNextRow) {
       bytes += await row(nextRow);
@@ -861,6 +872,7 @@ class Generator {
     bool isKanji = false,
     int colWidth = 12,
     int? maxCharsPerLine,
+    bool isRow = false,
   }) async {
     List<int> bytes = [];
     if (colInd != null) {
@@ -885,7 +897,7 @@ class Generator {
         }
       }
 
-      final hexStr = fromPos.round().toRadixString(16).padLeft(3, '0');
+      final hexStr = fromPos.round().toRadixString(16).padLeft(4, '0');
       final hexPair = HEX.decode(hexStr);
 
       // Position
@@ -894,7 +906,7 @@ class Generator {
       );
     }
 
-    bytes += await setStyles(styles, isKanji: isKanji);
+    bytes += await setStyles(styles, isKanji: isKanji, isRow: isRow);
 
     bytes += textBytes;
     return bytes;
@@ -916,6 +928,7 @@ class Generator {
     // Print each lexeme using codetable OR kanji
     int? colInd = 0;
     for (var i = 0; i < lexemes.length; ++i) {
+      // warningPrint("Current proccessing: ${lexemes[i]}");
       bytes += await _text(
         await _encode(lexemes[i],
             isKanji: isLexemeChinese[i], charset: charset ?? this.charset),

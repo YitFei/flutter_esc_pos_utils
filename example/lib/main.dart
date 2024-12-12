@@ -23,7 +23,7 @@ class MyApp extends StatefulWidget {
 
 class _MyAppState extends State<MyApp> {
   BlueThermalPrinter bluetooth = BlueThermalPrinter.instance;
-  late final Generator generator;
+
   List<BluetoothDevice> _devices = [];
   BluetoothDevice? _device;
   bool _connected = false;
@@ -31,7 +31,7 @@ class _MyAppState extends State<MyApp> {
   @override
   void initState() {
     super.initState();
-    _initializeGenerator();
+    POSDebugPrinting.instance.init(showLog: true);
     initPlatformState();
   }
 
@@ -102,7 +102,7 @@ class _MyAppState extends State<MyApp> {
                   style:
                       ElevatedButton.styleFrom(backgroundColor: Colors.brown),
                   onPressed: () {
-                    TestPrint(bluetooth, generator).print();
+                    TestPrint(bluetooth, _device!).print();
                   },
                   child: const Text('PRINT TEST',
                       style: TextStyle(color: Colors.white)),
@@ -166,20 +166,6 @@ class _MyAppState extends State<MyApp> {
         duration: duration,
       ),
     );
-  }
-
-  Future<void> _initializeGenerator() async {
-    generator = Generator(PaperSize.mm58, await loadCustomProfile(),
-        isKanji: true, spaceBetweenRows: 0, charset: "GBK");
-  }
-
-  Future<CapabilityProfile> loadCustomProfile() async {
-    final String data =
-        await rootBundle.loadString('assets/custom_capabilities.json');
-    final Map<String, dynamic> jsonData = json.decode(data);
-    // AppLogger.logger.e(jsonData);
-    return CapabilityProfile.fromMap(
-        jsonData['profiles']['customDefault'], "customDefault");
   }
 
   Future<void> initPlatformState() async {
