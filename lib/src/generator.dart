@@ -532,6 +532,7 @@ class Generator {
     }
     bool isNextRow = false;
     List<PosColumn> nextRow = <PosColumn>[];
+    bytes += await clearStyle();
 
     for (int i = 0; i < cols.length; ++i) {
       int colInd =

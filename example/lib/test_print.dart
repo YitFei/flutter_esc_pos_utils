@@ -85,188 +85,34 @@ class TestPrint {
     await bluetooth.connect(device).timeout(Duration(seconds: 5));
 
     await bluetooth.isConnected.then((connected) async {
-      //bytes += generator.reset();
-
-      // bytes += await generator.row([
-      //   PosColumn(text: "Item", width: 5),
-      //   PosColumn(
-      //       text: "Qty", styles: PosStyles(align: PosAlign.center), width: 2),
-      //   PosColumn(
-      //       text: "Price (MYR)",
-      //       width: 5,
-      //       styles: const PosStyles(align: PosAlign.right))
-      // ]);
-
-      // bytes += [27, 97, 49];
-      // bytes += bytes + await generator.text("123");
-      // bytes += [0x1D, 0x42, 0x02, 0x05];
-
-      // bytes += await generator.row([
-      //   PosColumn(
-      //     text: '啦啦啦啦啦啦啦啦啦啦啦啦啦',
-      //     width: 7,
-      //     //styles: PosStyles(align: PosAlign.left),
-      //   ),
-      //   PosColumn(
-      //     text: '123',
-      //     width: 5,
-      //     styles: PosStyles(align: PosAlign.right),
-      //   ),
-      // ]);
-
-      // bytes += await generator.text("test");
-
-      // bytes +=
-      //     await generator.text("测试", styles: PosStyles(align: PosAlign.right));
-
-      // bytes +=
-      //     await generator.text("右边", styles: PosStyles(align: PosAlign.right));
       bytes += generator.reset();
+      bytes += await generator.row([
+        PosColumn(text: "这是一个很长自我卡大量的啦啦；代码时，穆萨，穆萨旅客发送量；；了", width: 5),
+        PosColumn(
+            text: 1.toStringAsFixed(0),
+            width: 2,
+            styles: const PosStyles(align: PosAlign.right)),
+        PosColumn(
+            text: 100.toStringAsFixed(2),
+            width: 5,
+            styles: const PosStyles(align: PosAlign.right)),
+      ]);
 
-      // bytes += await generator.row([
-      //   PosColumn(
-      //     text: ' ',
-      //     width: 9,
-      //     styles: PosStyles(align: PosAlign.left),
-      //   ),
-      //   PosColumn(
-      //       text: '这是一个一个那么这样的测试啊',
-      //       width: 3,
-      //       styles: PosStyles(align: PosAlign.right)),
-      // ]);
+      bytes += await generator.row([
+        PosColumn(text: "drinkA", width: 5),
+        PosColumn(
+            text: 1.toStringAsFixed(0),
+            width: 2,
+            styles: const PosStyles(align: PosAlign.right)),
+        PosColumn(
+            text: 100.toStringAsFixed(2),
+            width: 5,
+            styles: const PosStyles(align: PosAlign.right)),
+      ]);
+
       warningPrint("Reset Bytes: $bytes");
       generator.currentLine = 0;
 
-      // bytes += await generator.text("我我我");
-      // bytes +=
-      //     await generator.text("1", styles: PosStyles(align: PosAlign.right));
-      //
-
-      // bytes += await generator.row([
-      //   PosColumn(
-      //     text: 'ttttttttttttttttttttttttt',
-      //     width: 5,
-      //     styles: PosStyles(align: PosAlign.left),
-      //   ),
-      //   PosColumn(
-      //     text: 'y',
-      //     width: 7,
-      //     styles: PosStyles(align: PosAlign.right),
-      //   ),
-      // ]);
-
-      //  bytes += await printB();
-
-      // bytes += await generator.row([
-      //   PosColumn(
-      //     text: '我我我我哦我我我我我',
-      //     width: 5,
-      //     styles: PosStyles(align: PosAlign.right),
-      //   ),
-      //   PosColumn(text: '四', width: 7, styles: PosStyles(align: PosAlign.left)),
-      // ]);
-
-      // bytes += await generator.row([
-      //   PosColumn(
-      //     text: '我我我我我我我我我',
-      //     width: 5,
-      //     styles: PosStyles(align: PosAlign.right),
-      //   ),
-      //   PosColumn(text: '四', width: 7, styles: PosStyles(align: PosAlign.left)),
-      // ]);
-
-      // bytes += [27, 97, 0]; // ESC a 0
-
-      // warningPrint("Row Bytes: $bytes");
-
-      // bytes += await generator.row([
-      //   PosColumn(text: '啦啦啦啦啦啦啦', width: 5),
-      //   // PosColumn(
-      //   //     text: '1', width: 2, styles: PosStyles(align: PosAlign.center)),
-      //   PosColumn(
-      //     text: '13',
-      //     width: 7,
-      //     styles: const PosStyles(align: PosAlign.right),
-      //   )
-      // ]);
-
-      // bytes += await generator.row([
-      //   PosColumn(
-      //       text: '啦啦啦啦啦啦啦啦啦啦啦啦啦啦啦啦',
-      //       width: 5,
-      //       styles: PosStyles(align: PosAlign.right)),
-      //   PosColumn(text: 't', width: 2),
-      //   PosColumn(
-      //     text: '13',
-      //     width: 5,
-      //     styles: const PosStyles(align: PosAlign.right),
-      //   )
-      // ]);
-
-      // bytes += await generator.row([
-      //   PosColumn(text: 'lalallalalalalallaalllllalalalalalal', width: 5),
-      //   PosColumn(
-      //       text: '1', width: 2, styles: PosStyles(align: PosAlign.center)),
-      //   PosColumn(
-      //       text: 13.toStringAsFixed(0),
-      //       width: 5,
-      //       styles: const PosStyles(align: PosAlign.right))
-      // ]);
-
-      // bytes += await generator.row([
-      //   PosColumn(text: 'LAla', width: 5),
-      //   PosColumn(text: '1', width: 2),
-      //   PosColumn(
-      //       text: 13.toStringAsFixed(0),
-      //       width: 5,
-      //       styles: const PosStyles(align: PosAlign.right))
-      // ]);
-
-      // //* Temp Data 1
-      // bytes += await generator.row([
-      //   PosColumn(text: '测试', width: 7),
-      //   PosColumn(text: '1', width: 2),
-      //   PosColumn(
-      //       text: "13".toString(),
-      //       width: 3,
-      //       styles: const PosStyles(align: PosAlign.right))
-      // ]);
-
-      // bytes += await generator.row([
-      //   PosColumn(text: '这是克嫩嫩嗯嗯撒了打开蓝色的喀喇昆仑山的卡萨卡里打孔老师的克拉克的开始', width: 5),
-      //   PosColumn(text: '1', width: 2),
-      //   PosColumn(
-      //     text: 13.toStringAsFixed(0),
-      //     width: 5,
-      //     // styles: const PosStyles(align: PosAlign.right)
-      //   )
-      // ]);
-
-      // //* Temp Data 1
-      // bytes += await generator.row([
-      //   PosColumn(text: 'apple', width: 5),
-      //   PosColumn(text: '1', width: 2),
-      //   PosColumn(
-      //       text: 1.toStringAsFixed(0),
-      //       width: 5,
-      //       styles: const PosStyles(align: PosAlign.right))
-      // ]);
-
-      // bytes += await generator.row([
-      //   PosColumn(text: "Semi-ripe", width: 5),
-      //   PosColumn(
-      //       text: "", width: 7, styles: const PosStyles(align: PosAlign.right)),
-      // ]);
-
-      // //* Temp Data 2
-      // bytes += await generator.row([
-      //   PosColumn(text: 'pineapple', width: 5),
-      //   PosColumn(text: '6', width: 2),
-      //   PosColumn(
-      //       text: 24.toStringAsFixed(0),
-      //       width: 5,
-      //       styles: const PosStyles(align: PosAlign.right))
-      // ]);
       await beepTest();
       bytes += generator.cut();
       bluetooth.writeBytes(Uint8List.fromList(bytes));
